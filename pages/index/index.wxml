@@ -1,0 +1,72 @@
+<view class="page">
+  <view class="hero">
+    <view><text class="eyebrow">STUDIO SCHEDULE</text><view class="title">团队档期</view></view>
+    <button class="today-btn" bindtap="goToday">今天</button>
+  </view>
+  <scroll-view class="filters" scroll-x enhanced show-scrollbar="{{false}}">
+    <view class="filter-row">
+      <view wx:for="{{filters}}" wx:key="id" class="filter {{activeFilter === item.id ? 'active' : ''}}" data-id="{{item.id}}" bindtap="changeFilter">
+        <view wx:if="{{item.color}}" class="filter-dot" style="background:{{item.color}}"></view>{{item.name}}
+      </view>
+    </view>
+  </scroll-view>
+  <view class="calendar-card">
+    <view class="month-bar">
+      <view class="arrow" data-delta="-1" bindtap="changeMonth">‹</view>
+      <button class="month-trigger" aria-label="选择年份和月份" bindtap="openMonthPicker">
+        <text class="month-label">{{monthLabel}}</text><view class="month-caret" aria-hidden="true"></view>
+      </button>
+      <view class="arrow" data-delta="1" bindtap="changeMonth">›</view>
+    </view>
+    <view class="week-head"><text wx:for="{{weekdays}}" wx:key="*this">{{item}}</text></view>
+    <view wx:if="{{loading}}" class="loading">正在读取档期…</view>
+    <view wx:else class="calendar">
+      <view class="week" wx:for="{{weeks}}" wx:key="index" wx:for-item="week">
+        <view wx:for="{{week}}" wx:key="key" wx:for-item="cell" class="day {{cell.empty ? 'empty' : ''}}" data-date="{{cell.date}}" bindtap="selectDate">
+          <view wx:if="{{!cell.empty}}" class="day-number {{cell.isToday ? 'today' : ''}}">{{cell.day}}</view>
+          <view class="marks"><view wx:for="{{cell.items}}" wx:key="_id" wx:for-item="schedule" class="mark" style="background:{{schedule.color}}">{{schedule.photographerName}}</view></view>
+        </view>
+      </view>
+    </view>
+  </view>
+  <button class="fab" hover-class="fab-hover" aria-label="新增档期" bindtap="addSchedule" data-date="{{selectedDate}}"><view class="fab-icon" aria-hidden="true"></view></button>
+  <view wx:if="{{monthPickerVisible}}" class="mask month-mask" bindtap="closeMonthPicker" catchtouchmove="stopPropagation">
+    <view class="month-sheet" catchtap="stopPropagation">
+      <view class="sheet-handle"></view>
+      <view class="month-picker-header">
+        <button class="picker-cancel" bindtap="closeMonthPicker">取消</button>
+        <text class="month-picker-title">选择年月</text>
+        <button class="picker-confirm" bindtap="confirmMonthPicker">确定</button>
+      </view>
+      <view class="picker-column-labels"><text>年份</text><text>月份</text></view>
+      <picker-view class="month-wheel" value="{{pickerValue}}" indicator-style="height: 104rpx;" bindchange="changePickerValue">
+        <picker-view-column>
+          <view wx:for="{{pickerYears}}" wx:key="*this" class="month-option {{pickerValue[0] === index ? 'month-option-selected' : ''}}">{{item}}年</view>
+        </picker-view-column>
+        <picker-view-column>
+          <view wx:for="{{pickerMonths}}" wx:key="*this" class="month-option {{pickerValue[1] === index ? 'month-option-selected' : ''}}">{{item}}月</view>
+        </picker-view-column>
+      </picker-view>
+    </view>
+  </view>
+  <view wx:if="{{detailVisible}}" class="mask" bindtap="closeDetail">
+    <view class="sheet safe-bottom" catchtap="stopPropagation">
+      <view class="sheet-handle"></view>
+      <view class="sheet-head">
+        <view><view class="sheet-title">{{selectedLabel}}</view><view class="sheet-sub">当日档期</view></view>
+        <button class="add-btn" data-date="{{selectedDate}}" bindtap="addSchedule">＋ 新增</button>
+      </view>
+      <view wx:if="{{selectedSchedules.length}}">
+        <view wx:for="{{selectedSchedules}}" wx:key="_id" class="schedule-item" data-id="{{item._id}}" bindtap="editSchedule">
+          <view class="color-bar" style="background:{{item.color}}"></view>
+          <view class="schedule-main">
+            <view class="schedule-name">{{item.photographerName}} <text>已占用</text></view>
+            <view wx:if="{{item.location || item.projectName}}" class="schedule-meta">{{item.projectName}} {{item.location}}</view>
+            <view wx:if="{{item.notes}}" class="schedule-note">{{item.notes}}</view>
+          </view><view class="chevron">›</view>
+        </view>
+      </view>
+      <view wx:else class="empty-state">当天三位摄影师均为空闲</view>
+    </view>
+  </view>
+</view>

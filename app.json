@@ -1,0 +1,12 @@
+{
+  "pages": ["pages/index/index", "pages/edit/edit"],
+  "window": {
+    "navigationBarTitleText": "档期管理",
+    "navigationBarTextStyle": "black",
+    "navigationBarBackgroundColor": "#F7F5F0",
+    "backgroundColor": "#F7F5F0"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

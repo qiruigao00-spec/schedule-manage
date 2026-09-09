@@ -1,0 +1,53 @@
+<view class="page safe-bottom">
+  <view class="intro"><view class="title">{{editing ? '编辑档期' : '新增档期'}}</view><view class="sub">必填摄影师和拍摄日期，其他信息可稍后补充</view></view>
+  <view class="form-card">
+    <view class="field"><view class="label">摄影师 <text>*</text></view>
+      <view class="picker-value" role="button" aria-label="选择摄影师" bindtap="openPhotographerPicker"><view class="person-dot" style="background:{{photographers[photographerIndex].color}}"></view>{{photographers[photographerIndex].name}}<text>›</text></view>
+    </view>
+    <view class="field"><view class="label">拍摄日期 <text>*</text></view><view class="picker-value" role="button" aria-label="选择拍摄日期" bindtap="openDatePicker">{{date || '请选择日期'}}<text>›</text></view></view>
+    <view class="field"><view class="label">客户 / 项目</view><input value="{{projectName}}" placeholder="例如：王女士婚礼" data-field="projectName" bindinput="changeField" /></view>
+    <view class="field"><view class="label">地点</view><input value="{{location}}" placeholder="例如：杭州" data-field="location" bindinput="changeField" /></view>
+    <view class="field last"><view class="label">备注</view><textarea value="{{notes}}" placeholder="补充拍摄要求、双机、半天等信息" data-field="notes" bindinput="changeField" maxlength="500" /></view>
+  </view>
+  <button class="save" loading="{{loading}}" disabled="{{loading}}" bindtap="save">保存档期</button>
+  <button wx:if="{{editing}}" class="delete" bindtap="remove">删除档期</button>
+  <view wx:if="{{photographerPickerVisible}}" class="date-mask" bindtap="closePhotographerPicker" catchtouchmove="stopPropagation">
+    <view class="date-sheet" catchtap="stopPropagation">
+      <view class="date-sheet-handle"></view>
+      <view class="date-picker-header">
+        <button class="picker-cancel" bindtap="closePhotographerPicker">取消</button>
+        <text class="date-picker-title">选择摄影师</text>
+        <button class="picker-confirm" bindtap="confirmPhotographerPicker">确定</button>
+      </view>
+      <view class="photographer-options">
+        <button wx:for="{{photographers}}" wx:key="id" class="photographer-option {{pendingPhotographerIndex === index ? 'photographer-option-selected' : ''}}" data-index="{{index}}" bindtap="selectPhotographer" aria-label="{{item.name}}{{pendingPhotographerIndex === index ? '，已选中' : ''}}">
+          <view class="photographer-color" style="background:{{item.color}}"></view>
+          <text class="photographer-name">{{item.name}}</text>
+          <view class="photographer-check {{pendingPhotographerIndex === index ? 'photographer-check-selected' : ''}}" aria-hidden="true"></view>
+        </button>
+      </view>
+    </view>
+  </view>
+  <view wx:if="{{datePickerVisible}}" class="date-mask" bindtap="closeDatePicker" catchtouchmove="stopPropagation">
+    <view class="date-sheet" catchtap="stopPropagation">
+      <view class="date-sheet-handle"></view>
+      <view class="date-picker-header">
+        <button class="picker-cancel" bindtap="closeDatePicker">取消</button>
+        <text class="date-picker-title">选择拍摄日期</text>
+        <button class="picker-confirm" bindtap="confirmDatePicker">确定</button>
+      </view>
+      <view class="picker-column-labels"><text>年份</text><text>月份</text><text>日期</text></view>
+      <picker-view class="date-wheel" value="{{pickerValue}}" indicator-style="height: 104rpx;" bindchange="changeDatePicker">
+        <picker-view-column>
+          <view wx:for="{{pickerYears}}" wx:key="*this" class="date-option {{pickerValue[0] === index ? 'date-option-selected' : ''}}">{{item}}年</view>
+        </picker-view-column>
+        <picker-view-column>
+          <view wx:for="{{pickerMonths}}" wx:key="*this" class="date-option {{pickerValue[1] === index ? 'date-option-selected' : ''}}">{{item}}月</view>
+        </picker-view-column>
+        <picker-view-column>
+          <view wx:for="{{pickerDays}}" wx:key="*this" class="date-option {{pickerValue[2] === index ? 'date-option-selected' : ''}}">{{item}}日</view>
+        </picker-view-column>
+      </picker-view>
+    </view>
+  </view>
+</view>
