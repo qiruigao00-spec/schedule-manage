@@ -1,6 +1,16 @@
 const http=require('node:http'),crypto=require('node:crypto'),cloudbase=require('@cloudbase/node-sdk'),{parse,format}=require('./query')
 if(!process.env.ADMIN_TOKEN||process.env.ADMIN_TOKEN.length<32)throw Error('ADMIN_TOKEN 至少32字符')
 if(!process.env.CLOUDBASE_ENV_ID)throw Error('缺少 CLOUDBASE_ENV_ID')
+if(!process.env.CLOUDBASE_APIKEY?.trim())throw Error('未收到 CLOUDBASE_APIKEY，请检查当前版本的 API Key 注入')
+console.info('CloudBase startup configuration',{
+ sdkVersion:cloudbase.version||'UNKNOWN',
+ env:process.env.CLOUDBASE_ENV_ID,
+ apiKeyPresent:true,
+ apiKeyHasOuterWhitespace:process.env.CLOUDBASE_APIKEY!==process.env.CLOUDBASE_APIKEY.trim(),
+ legacySessionTokenPresent:!!process.env.TENCENTCLOUD_SESSIONTOKEN,
+ legacySecretIdPresent:!!process.env.TENCENTCLOUD_SECRETID,
+ legacySecretKeyPresent:!!process.env.TENCENTCLOUD_SECRETKEY
+})
 const db=cloudbase.init({
   env: process.env.CLOUDBASE_ENV_ID,
   accessKey: process.env.CLOUDBASE_APIKEY
