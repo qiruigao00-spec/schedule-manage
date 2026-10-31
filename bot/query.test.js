@@ -1,0 +1,6 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),{parse,format}=require('./query')
+const now=new Date('2026-12-31T16:30:00Z')
+test('完整日期与上海当前年份',()=>{assert.equal(parse('11月7日谁有空',now).date,'2027-11-07');for(const d of ['2026年11月7日','2026-11-07','2026/11/7'])assert.equal(parse(`山梨${d}有空吗`,now).date,'2026-11-07')})
+test('校验日期和闰年',()=>{assert.equal(parse('2028年2月29日谁有空',now).date,'2028-02-29');for(const d of ['2月30日','2027年2月29日','13月1日'])assert.throws(()=>parse(d+'谁有空',now))})
+test('拒绝相对日期、日期范围、未知姓名和写操作',()=>{for(const s of ['明天谁有空','山梨下周六有空吗','11月7日到11月8日谁有空','张三11月7日有空吗','删除山梨11月7日档期'])assert.throws(()=>parse(s,now))})
+test('回复项目地点备注且不编造字段',()=>{const text=format(parse('11月7日谁有空',now),[{photographerId:'shanli',projectName:'婚礼',location:'福州',notes:'双机'},{photographerId:'xiaoguai'}]);assert.match(text,/项目：婚礼\n  地点：福州\n  备注：双机/);assert.match(text,/牧羊：系统未记录安排/);assert.match(text,/小拐：当天已有安排$/);assert.doesNotMatch(text,/undefined|null/)})
