@@ -13,11 +13,11 @@ function parse(text,now=new Date()) {
 }
 function format(query,rows) {
  const available=query.people.filter(p=>!rows.some(r=>r.photographerId===p.id))
- const summary=query.availability?(available.length?`可进一步确认档期：${available.map(p=>p.name).join('、')}（系统未记录当天安排）`:'当天所有摄影师均已有安排')+'\n':''
+ const summary=query.availability?(available.length?`有档期：${available.map(p=>p.name).join('、')}`:'所有摄影师都没档期')+'\n':''
  return query.date+'\n'+summary+query.people.map(p=>{
  const records=rows.filter(r=>r.photographerId===p.id)
- if(!records.length)return `${p.name}：系统未记录安排，可进一步确认档期`
- return `${p.name}：当天已有安排`+records.map(r=>[r.projectName&&`项目：${r.projectName}`,r.location&&`地点：${r.location}`,r.notes&&`备注：${r.notes}`].filter(Boolean).map(s=>'  '+s).join('\n')).filter(Boolean).map(s=>'\n'+s).join('')
+ if(!records.length)return `${p.name}：有档期`
+ return `${p.name}：没档期`+records.map(r=>[r.projectName&&`项目：${r.projectName}`,r.location&&`地点：${r.location}`,r.notes&&`备注：${r.notes}`].filter(Boolean).map(s=>'  '+s).join('\n')).filter(Boolean).map(s=>'\n'+s).join('')
  }).join('\n')
 }
 module.exports={parse,format}
