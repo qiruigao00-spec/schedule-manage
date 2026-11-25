@@ -5,6 +5,15 @@ test('迁移旧绑定，分离授权、凭证和游标，持久化多个微信',
  let source=fs.readFileSync(__dirname+'/server.js','utf8')
  source=source.slice(0,source.indexOf('http.createServer'))
  const context=vm.createContext(sandbox);vm.runInContext(source,context)
+ await vm.runInContext("notifyLifecycle({token:'lifecycle-token'},'start')",context)
+ assert.ok(calls[0].url.endsWith('/ilink/bot/msg/notifystart'))
+ assert.equal(calls[0].options.headers.Authorization,'Bearer lifecycle-token')
+ assert.ok(JSON.parse(calls[0].options.body).base_info)
+ await vm.runInContext("notifyLifecycle({token:'lifecycle-token'},'stop')",context)
+ assert.ok(calls[1].url.endsWith('/ilink/bot/msg/notifystop'))
+ const workingFetch=sandbox.fetch;sandbox.fetch=async()=>{throw Error('fetch failed')}
+ await vm.runInContext("notifyLifecycle({token:'lifecycle-token'},'start')",context)
+ sandbox.fetch=workingFetch;calls.length=0
  await vm.runInContext("startPoll=()=>{};load()",context)
  assert.equal(vm.runInContext('accounts[0].cursor',context),'old-cursor')
  await vm.runInContext("accounts.push({owner:'second',token:'token2',cursor:'second-cursor'});persist()",context)

@@ -49,14 +49,22 @@ async function reply(msg,account){
  await api('/ilink/bot/sendmessage',{msg:{from_user_id:'',to_user_id:msg.from_user_id,client_id:id,message_type:2,message_state:2,context_token:msg.context_token,item_list:[{type:1,text_item:{text:answer}}]},base_info:metadata},account.token,account.base)
 }
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms))
-function startPoll(account){if(polling.has(account))return;polling.add(account);poll(account).finally(()=>polling.delete(account))}
+async function notifyLifecycle(account,event){
+ try{await api('/ilink/bot/msg/notify'+event,{base_info:metadata},account.token,account.base)}
+ catch(e){console.error('微信连接状态通知失败',event,e.message)}
+}
+function startPoll(account){
+ if(polling.has(account))return
+ polling.add(account)
+ notifyLifecycle(account,'start').then(()=>poll(account)).finally(()=>polling.delete(account))
+}
 async function poll(account){while(!stopped&&accounts.includes(account)){try{
  const data=await api('/ilink/bot/getupdates',{get_updates_buf:account.cursor||'',base_info:metadata},account.token,account.base)
  if(!accounts.includes(account))return
  for(const msg of data.msgs||[])await reply(msg,account)
  if(data.get_updates_buf){const previous=account.cursor;account.cursor=data.get_updates_buf;try{await persist()}catch(e){account.cursor=previous;throw e}}
- account.lastSuccess=new Date().toISOString()
- }catch(e){console.error('微信轮询失败',e.message);await sleep(e.message.includes('-14')?3600000:5000)}}}
+ account.lastSuccess=new Date().toISOString();delete account.lastError
+ }catch(e){account.lastError=e.message;console.error('微信轮询失败',e.message);await sleep(e.message.includes('-14')?3600000:5000)}}}
 function authorized(req){const actual=Buffer.from(req.headers.authorization||''),expected=Buffer.from('Bearer '+process.env.ADMIN_TOKEN);return actual.length===expected.length&&crypto.timingSafeEqual(actual,expected)}
 http.createServer(async(req,res)=>{
  res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('Cache-Control','no-store')
@@ -64,7 +72,7 @@ http.createServer(async(req,res)=>{
  if(req.url==='/healthz')return send(200,{ok:true})
  if(!authorized(req))return send(401,{error:'Unauthorized'})
  try{
- if(req.method==='GET'&&req.url==='/admin/status')return send(200,{bound:accounts.length>0,accountCount:accounts.length,accounts:accounts.map((a,index)=>({index:index+1,lastSuccess:a.lastSuccess||null}))})
+ if(req.method==='GET'&&req.url==='/admin/status')return send(200,{bound:accounts.length>0,accountCount:accounts.length,accounts:accounts.map((a,index)=>({index:index+1,lastSuccess:a.lastSuccess||null,lastError:a.lastError||null}))})
  if(req.method==='POST'&&req.url==='/admin/login'){
  if(accounts.length>=10)return send(409,{error:'最多支持10个微信绑定'})
  const data=await api('/ilink/bot/get_bot_qrcode?bot_type=3',{local_token_list:accounts.map(a=>a.token)});qr={id:data.qrcode,base:'https://ilinkai.weixin.qq.com'};return send(200,{qrcode:data.qrcode,qrcode_img_content:data.qrcode_img_content})
@@ -89,4 +97,4 @@ http.createServer(async(req,res)=>{
  send(404,{error:'Not found'})
  }catch{console.error('管理操作失败');send(502,{error:'操作失败，请检查数据库权限、配置和微信连接'})}
 }).listen(Number(process.env.PORT||8080),'0.0.0.0',()=>{load().catch(e=>{logDbError('bot_state.get',e);console.error('无法读取 bot_state，请检查集合、API Key 和数据库权限');process.exit(1)})})
-process.on('SIGTERM',()=>{stopped=true;process.exit(0)})
+process.on('SIGTERM',()=>{stopped=true;Promise.allSettled(accounts.map(a=>notifyLifecycle(a,'stop'))).finally(()=>process.exit(0));setTimeout(()=>process.exit(0),5000).unref()})
