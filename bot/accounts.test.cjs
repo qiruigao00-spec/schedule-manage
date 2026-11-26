@@ -5,6 +5,8 @@ test('迁移旧绑定，分离授权、凭证和游标，持久化多个微信',
  let source=fs.readFileSync(__dirname+'/server.js','utf8')
  source=source.slice(0,source.indexOf('http.createServer'))
  const context=vm.createContext(sandbox);vm.runInContext(source,context)
+ await vm.runInContext("startPoll({token:'disabled-token'})",context)
+ assert.equal(calls.length,0,'停用模式不会启动微信请求')
  await vm.runInContext("notifyLifecycle({token:'lifecycle-token'},'start')",context)
  assert.ok(calls[0].url.endsWith('/ilink/bot/msg/notifystart'))
  assert.equal(calls[0].options.headers.Authorization,'Bearer lifecycle-token')

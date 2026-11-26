@@ -54,9 +54,8 @@ async function notifyLifecycle(account,event){
  catch(e){console.error('微信连接状态通知失败',event,e.message)}
 }
 function startPoll(account){
- if(polling.has(account))return
- polling.add(account)
- notifyLifecycle(account,'start').then(()=>poll(account)).finally(()=>polling.delete(account))
+ // 微信主动拉取已停用；不在启动或扫码后创建后台任务。
+ return
 }
 async function poll(account){while(!stopped&&accounts.includes(account)){try{
  const data=await api('/ilink/bot/getupdates',{get_updates_buf:account.cursor||'',base_info:metadata},account.token,account.base)
@@ -72,6 +71,14 @@ http.createServer(async(req,res)=>{
  if(req.url==='/healthz')return send(200,{ok:true})
  if(!authorized(req))return send(401,{error:'Unauthorized'})
  try{
+ if(req.method==='POST'&&req.url==='/admin/query'){
+ let raw='';for await(const part of req){raw+=part;if(Buffer.byteLength(raw)>8192)return send(413,{error:'请求过长'})}
+ let query
+ try{query=parse(JSON.parse(raw).text)}catch{return send(400,{error:'请提供 text 和一个具体日期、摄影师姓名或谁有空'})}
+ try{const result=await db.collection('schedules').where({date:query.date}).limit(100).get();return send(200,{answer:format(query,result.data)})}
+ catch(e){logDbError('schedules.get',e);return send(503,{error:'档期查询暂时失败，请稍后重试'})}
+ }
+ await load()
  if(req.method==='GET'&&req.url==='/admin/status')return send(200,{bound:accounts.length>0,accountCount:accounts.length,accounts:accounts.map((a,index)=>({index:index+1,lastSuccess:a.lastSuccess||null,lastError:a.lastError||null}))})
  if(req.method==='POST'&&req.url==='/admin/login'){
  if(accounts.length>=10)return send(409,{error:'最多支持10个微信绑定'})
@@ -96,5 +103,5 @@ http.createServer(async(req,res)=>{
  }
  send(404,{error:'Not found'})
  }catch{console.error('管理操作失败');send(502,{error:'操作失败，请检查数据库权限、配置和微信连接'})}
-}).listen(Number(process.env.PORT||8080),'0.0.0.0',()=>{load().catch(e=>{logDbError('bot_state.get',e);console.error('无法读取 bot_state，请检查集合、API Key 和数据库权限');process.exit(1)})})
-process.on('SIGTERM',()=>{stopped=true;Promise.allSettled(accounts.map(a=>notifyLifecycle(a,'stop'))).finally(()=>process.exit(0));setTimeout(()=>process.exit(0),5000).unref()})
+}).listen(Number(process.env.PORT||8080),'0.0.0.0',()=>console.info('按需查询模式：微信轮询已停用'))
+process.on('SIGTERM',()=>{stopped=true;process.exit(0)})
